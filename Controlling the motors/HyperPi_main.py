@@ -64,18 +64,6 @@ def gif(filename=None, delay_time=1/15, loop_count=float('inf'), frame=None, res
     if filename:
         imageio.mimsave(filename, frame, duration=delay_time, loop=loop_count)
 
-import numpy as np
-import scipy.io
-
-class BiospaceData:
-    def __init__(self, data, scatter_angles, yaw_angles, roll_angles, wavelengths, polarization_angles):
-        self.data = data
-        self.scatter_angles = scatter_angles
-        self.yaw_angles = yaw_angles
-        self.roll_angles = roll_angles
-        self.wavelengths = wavelengths
-        self.polarization_angles = polarization_angles
-
 def read_biospace_data(folder_path, reference, flatfield_shape):
     # Leer todos los archivos .mat en la carpeta dada.
     data_files = list(Path(folder_path).glob('*.mat'))
@@ -104,7 +92,14 @@ def read_biospace_data(folder_path, reference, flatfield_shape):
     wavelengths = mat_data['wavelengths'].flatten()
     polarization_angles = mat_data.get('polarization_angles', np.array([0, 90])).flatten()
     
-    return BiospaceData(data, scatter_angles, yaw_angles, roll_angles, wavelengths, polarization_angles)
+    return {
+        'data': data,
+        'scatter_angles': scatter_angles,
+        'yaw_angles': yaw_angles,
+        'roll_angles': roll_angles,
+        'wavelengths': wavelengths,
+        'polarization_angles': polarization_angles
+    }
 
 
 #---------------------------------------------------------------------------------------------------------
