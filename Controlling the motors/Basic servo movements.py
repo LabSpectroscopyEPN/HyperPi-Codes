@@ -3,7 +3,7 @@ import time
 
 # Set up the GPIO
 GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
-servo_pin =  # Connect your servo data pin to GPIO 11 (Pin 11)
+servo_pin =  # Connect your servo data pin to GPIO Pin
 
 # Set up the servo pin
 GPIO.setup(servo_pin, GPIO.OUT)
@@ -13,13 +13,11 @@ servo = GPIO.PWM(servo_pin, 50)  # 50Hz frequency for the servo
 servo.start(0)
 
 def set_angle(angle):
-    # The duty cycle is based on the angle; typically,
-    #0 degrees = 2% duty cycle, and 180 degrees = 12% duty cycle
-    duty_cycle = 2 + (angle / 18)
-    GPIO.output(servo_pin, True) # don't really needed
+    duty_cycle = 2 + (angle / 19)
+    GPIO.output(servo_pin, True)
     servo.ChangeDutyCycle(duty_cycle)
     time.sleep(0.5)
-    GPIO.output(servo_pin, False) # don't really needed
+    GPIO.output(servo_pin, False)
     servo.ChangeDutyCycle(0)
 
 try:
