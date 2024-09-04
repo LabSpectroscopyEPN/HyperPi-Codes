@@ -1,4 +1,6 @@
 // Codigo para subir a Arduino Nano en comunicacion I2C con RaspberryPi
+// El modulo de reles tiene logica invertida, cuando un pin recibe 0
+// se enciende el rele correspondiente
 
 #include <Wire.h>
 
