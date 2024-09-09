@@ -5,7 +5,7 @@
 #include <Wire.h>
 
 int digitalPins[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-int analogPins[] = {A0, A1, A2, A3, A6}; // A4 removido, A6 agregado
+int analogPins[] = {A0, A1, A2, A3};
 
 void setup() {
   Wire.begin(8); // Iniciar Arduino como esclavo I2C con dirección 8
