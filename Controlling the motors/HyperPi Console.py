@@ -9,7 +9,7 @@ class CameraApp:
     def __init__(self, root):
         self.root = root
         GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
-        self.pins = {"Sampler" : 0, "Polarizer" : 0} # initialize the pins dictionary
+        self.pins = {"Sampler" : 0, "Polarizer" : 0, "LED Motor": 0} # initialize the pins dictionary
         self.preview_thread = None # thread for start and stop preview
         self.stop_preview_event = threading.Event() # defining an event
         self.picam2 = Picamera2() # create a picamera2 object
@@ -17,65 +17,94 @@ class CameraApp:
         self.root.title("HyperPi Project")
 
         # window configuration
-        self.root.rowconfigure(0, minsize=800, weight=1)
-        self.root.columnconfigure(1, minsize=800, weight=1)
+        self.root.rowconfigure(0, weight=1)
+        self.root.columnconfigure(0, weight = 1, minsize = 350)
+        self.root.columnconfigure(1, weight = 1, minsize = 350)
         
         # define the right-side of the console, where camera controls are shown
-        self.right_side = tk.Frame(self.root, bg = "white")
+        self.right_side = tk.Frame(self.root, relief = tk.RAISED, bd=2)
         #define the left-side of the console, where pins and other controlls are shown 
         self.left_side = tk.Frame(self.root, relief = tk.RAISED, bd=2)
 
         # adding both sides to the window
-        self.left_side.grid(row=0, column=0, sticky="ns")
+        self.left_side.grid(row=0, column=0, sticky="nsew")
         self.right_side.grid(row=0, column=1, sticky="nsew")
 
         #----------------------------------------------------
         # Entering custom pins layouts
         
-        self.sampler_label = tk.Label(self.left_side, text = "Sampler pin :")
-        self.sampler_label.grid(row = 0, column = 0, sticky ="ew", padx = 5, pady = 5)
+        self.pin_layout_frame = tk.Frame(self.left_side, relief = tk.RAISED, bd = 2)
+        self.pin_layout_frame.grid(row = 0, column = 0, sticky = "nsew")
+        
+        self.sampler_label = tk.Label(self.pin_layout_frame, text = "Sampler pin :")
+        self.sampler_label.grid(row = 0, column = 0, sticky = "e", padx = 5, pady = 5)
 
-        self.polarizer_label = tk.Label(self.left_side, text = "Polarizer pin :")
-        self.polarizer_label.grid(row = 1, column = 0, sticky = "ew", padx = 5)
+        self.polarizer_label = tk.Label(self.pin_layout_frame, text = "Polarizer pin :")
+        self.polarizer_label.grid(row = 1, column = 0, sticky = "e", padx = 5, pady = 5)
+        
+        self.motor_label = tk.Label(self.pin_layout_frame, text = "Motor pin :")
+        self.motor_label.grid(row = 2, column = 0, sticky ="e", padx = 5, pady = 5)
 
-        self.sampler_pin = tk.Entry(self.left_side, bg = "white", fg = "black")
-        self.sampler_pin.grid(row = 0, column = 1, sticky = "ew", padx = 5, pady = 5)
+        self.sampler_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
+        self.sampler_pin.grid(row = 0, column = 1, sticky = "ns", padx = 5, pady = 5)
 
-        self.polarizer_pin = tk.Entry(self.left_side, bg = "white", fg = "black")
-        self.polarizer_pin.grid(row = 1, column = 1, sticky = "ew", padx = 5)
+        self.polarizer_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
+        self.polarizer_pin.grid(row = 1, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
+        self.motor_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
+        self.motor_pin.grid(row = 2, column = 1, sticky = "ns", padx = 5, pady = 5)
 
-        self.btn_set_pins = tk.Button(self.left_side, text="Set Pins", command = self.set_pins)
-        self.btn_set_pins.grid(row = 2, column = 0, sticky = "ew", padx = 5, pady = 5)
+        self.btn_set_pins = tk.Button(self.pin_layout_frame, text="Set Pins", command = self.set_pins, width = 20)
+        self.btn_set_pins.grid(row = 3, column = 0, columnspan = 2, sticky = "ns", padx = 5, pady = 5)
         
         # end entering custom pins layouts
         #--------------------------------------------------
         # Moving the motors to custom angles
         
-        self.sampler_angle = tk.Entry(self.left_side, bg = "white", fg = "black")
-        self.sampler_angle.grid(row = 3, column = 1, sticky = "ew", padx = 5, pady = 5)
+        self.servo_controls_layout = tk.Frame(self.left_side, relief = tk.RAISED, bd=2)
+        self.servo_controls_layout.grid(row = 1, column = 0, sticky = "ew")
+        
+        self.sampler_angle = tk.Entry(self.servo_controls_layout, bg = "white", fg = "black")
+        self.sampler_angle.grid(row = 0, column = 1, sticky = "ew", padx = 5, pady = 5)
 
-        self.btn_set_sampler_angle = tk.Button(self.left_side,
+        self.btn_set_sampler_angle = tk.Button(self.servo_controls_layout,
                                                text = "Move Sampler",
                                                command = lambda: self.set_angle(float(self.sampler_angle.get()), self.pins["Sampler"]))
-        self.btn_set_sampler_angle.grid(row = 3, column = 0, sticky = "ew", padx = 5, pady = 5)
+        self.btn_set_sampler_angle.grid(row = 0, column = 0, sticky = "ew", padx = 5, pady = 5)
 
-        self.polarizer_angle = tk.Entry(self.left_side, bg = "white", fg = "black")
-        self.polarizer_angle.grid(row = 4, column = 1, sticky = "ew", padx = 5)
+        self.polarizer_angle = tk.Entry(self.servo_controls_layout, bg = "white", fg = "black")
+        self.polarizer_angle.grid(row = 1, column = 1, sticky = "ew", padx = 5)
 
-        self.btn_set_polarizer_angle = tk.Button(self.left_side,
+        self.btn_set_polarizer_angle = tk.Button(self.servo_controls_layout,
                                                  text = "Move Polarizer",
                                                  command = lambda: self.set_angle(float(self.polarizer_angle.get()), self.pins["Polarizer"]))
-        self.btn_set_polarizer_angle.grid(row = 4, column = 0, sticky = "ew", padx = 5)
+        self.btn_set_polarizer_angle.grid(row = 1, column = 0, sticky = "ew", padx = 5)
+
+        self.motor_angle = tk.Entry(self.servo_controls_layout, bg = "white", fg = "black")
+        self.motor_angle.grid(row = 2, column = 1, sticky = "ew", padx = 5)
+
+        self.btn_set_motor_angle = tk.Button(self.servo_controls_layout,
+                                                 text = "Move LEDs Motor",
+                                                 command = lambda: self.set_angle(float(self.motor_angle.get()), self.pins["LED Motor"]))
+        self.btn_set_motor_angle.grid(row = 2, column = 0, sticky = "ew", padx = 5)
 
         # End moving the motors to custom angles
         #--------------------------------------------------
         # Adding a preview controls
         
-        self.btn_start_preview = tk.Button(self.left_side, text="Start Preview", command=self.start_preview)
-        self.btn_start_preview.grid(row=5, column=0, padx=5, pady=5)
+        self.preview_layout = tk.Frame(self.right_side, relief = tk.RAISED, bd=2)
+        self.preview_layout.grid(row = 0, column = 0, sticky = "ns")
+        
+        self.btn_start_preview = tk.Button(self.preview_layout, text="Start Preview",
+                                           command=self.start_preview,
+                                           width = 15)
+        self.btn_start_preview.grid(row=0, column=0, padx=5, pady=5)
 
-        self.btn_stop_preview = tk.Button(self.left_side, text="Stop Preview", command=self.stop_preview_loop, state="disabled")
-        self.btn_stop_preview.grid(row=5, column=1, padx=5, pady=5)
+        self.btn_stop_preview = tk.Button(self.preview_layout, text="Stop Preview",
+                                          command=self.stop_preview_loop,
+                                          state="disabled",
+                                          width = 15)
+        self.btn_stop_preview.grid(row=0, column=1, padx=5, pady=5)
 
         # End preview controls
         #--------------------------------------------------
@@ -87,6 +116,7 @@ class CameraApp:
         try:
             self.pins["Sampler"] = int(self.sampler_pin.get())
             self.pins["Polarizer"] = int(self.polarizer_pin.get())
+            self.pins["LED Motor"] = int(self.motor_pin.get())
             print("\nPins are set to")
             
             for key, value in self.pins.items():
@@ -143,7 +173,6 @@ class CameraApp:
 # end CameraApp class
 try:
     window = tk.Tk()
-    window.geometry("800x800")
 
     app = CameraApp(window)
     window.mainloop()
@@ -151,3 +180,4 @@ try:
 finally:
     print("\n","Bye","\n",sep=10*"-")
     GPIO.cleanup()
+
