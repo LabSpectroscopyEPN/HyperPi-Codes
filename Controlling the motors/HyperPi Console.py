@@ -2,6 +2,7 @@ import RPi.GPIO as GPIO
 import time
 import tkinter as tk
 from picamera2 import Picamera2,Preview
+from libcamera import controls
 import threading
 
 
@@ -10,6 +11,7 @@ class CameraApp:
         self.root = root
         GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
         self.pins = {"Sampler" : 0, "Polarizer" : 0, "LED Motor": 0} # initialize the pins dictionary
+        self.camera_controls = {}
         self.preview_thread = None # thread for start and stop preview
         self.stop_preview_event = threading.Event() # defining an event
         self.picam2 = Picamera2() # create a picamera2 object
@@ -73,20 +75,20 @@ class CameraApp:
         self.btn_set_sampler_angle.grid(row = 0, column = 0, sticky = "ew", padx = 5, pady = 5)
 
         self.polarizer_angle = tk.Entry(self.servo_controls_layout, bg = "white", fg = "black")
-        self.polarizer_angle.grid(row = 1, column = 1, sticky = "ew", padx = 5)
+        self.polarizer_angle.grid(row = 1, column = 1, sticky = "ew", padx = 5, pady = 5)
 
         self.btn_set_polarizer_angle = tk.Button(self.servo_controls_layout,
                                                  text = "Move Polarizer",
                                                  command = lambda: self.set_angle(float(self.polarizer_angle.get()), self.pins["Polarizer"]))
-        self.btn_set_polarizer_angle.grid(row = 1, column = 0, sticky = "ew", padx = 5)
+        self.btn_set_polarizer_angle.grid(row = 1, column = 0, sticky = "ew", padx = 5, pady = 5)
 
         self.motor_angle = tk.Entry(self.servo_controls_layout, bg = "white", fg = "black")
-        self.motor_angle.grid(row = 2, column = 1, sticky = "ew", padx = 5)
+        self.motor_angle.grid(row = 2, column = 1, sticky = "ew", padx = 5, pady = 5)
 
         self.btn_set_motor_angle = tk.Button(self.servo_controls_layout,
                                                  text = "Move LEDs Motor",
                                                  command = lambda: self.set_angle(float(self.motor_angle.get()), self.pins["LED Motor"]))
-        self.btn_set_motor_angle.grid(row = 2, column = 0, sticky = "ew", padx = 5)
+        self.btn_set_motor_angle.grid(row = 2, column = 0, sticky = "ew", padx = 5, pady = 5)
 
         # End moving the motors to custom angles
         #--------------------------------------------------
@@ -95,16 +97,44 @@ class CameraApp:
         self.preview_layout = tk.Frame(self.right_side, relief = tk.RAISED, bd=2)
         self.preview_layout.grid(row = 0, column = 0, sticky = "ns")
         
+        tk.Label(self.preview_layout, text = "Width :").grid(row = 0, column = 0,
+                                                             sticky = "e", padx = 5, pady = 5)
+        
+        self.width_resolution = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.width_resolution.grid(row = 0, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
+        tk.Label(self.preview_layout, text = "Height :").grid(row = 1, column = 0,
+                                                              sticky = "e", padx = 5, pady = 5)
+        
+        self.height_resolution = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.height_resolution.grid(row = 1, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
         self.btn_start_preview = tk.Button(self.preview_layout, text="Start Preview",
                                            command=self.start_preview,
                                            width = 15)
-        self.btn_start_preview.grid(row=0, column=0, padx=5, pady=5)
+        self.btn_start_preview.grid(row=3, column=0, padx=5, pady=5)
 
         self.btn_stop_preview = tk.Button(self.preview_layout, text="Stop Preview",
                                           command=self.stop_preview_loop,
                                           state="disabled",
                                           width = 15)
-        self.btn_stop_preview.grid(row=0, column=1, padx=5, pady=5)
+        self.btn_stop_preview.grid(row=3, column=1, padx=5, pady=5)
+        
+        tk.Label(self.preview_layout, text = "Time Exposure :").grid(row = 4, column = 0,
+                                                                     sticky = "e", padx = 5, pady = 5)
+        
+        self.time_exposure = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.time_exposure.grid(row = 4, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
+        
+        tk.Label(self.preview_layout, text = "Gain :").grid(row = 5, column = 0,
+                                                                     sticky = "e", padx = 5, pady = 5)
+        
+        self.camera_gain = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.camera_gain.grid(row = 5, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
+        self.btn_set_controls = tk.Button(self.preview_layout, text="Set Camera Controls", command = self.set_camera_controls, width = 20)
+        self.btn_set_controls.grid(row = 6, column = 0, columnspan = 2, sticky = "ns", padx = 5, pady = 5)
 
         # End preview controls
         #--------------------------------------------------
@@ -152,24 +182,41 @@ class CameraApp:
         self.stop_preview_event.set()
         self.btn_start_preview.config(state="normal")
         self.btn_stop_preview.config(state="disabled")
-        print("\nCapture loop has ended")
+        print("\nPreview has ended")
 
     def preview_loop(self):
         self.picam2.start_preview(Preview.QTGL)
-        self.picam2.configure(self.picam2.create_preview_configuration(main={"size":(800,600)}))
-        self.picam2.start()
         self.set_camera_configuration()
+        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.picam2.start()
         while not self.stop_preview_event.is_set():
             print("Preview displayed")
-            time.sleep(5)
+            time.sleep(10)
             continue
         self.picam2.stop_preview()
         self.picam2.stop()
     
     def set_camera_configuration(self):
-        self.picam2.set_controls({"AfMode": 2, "AfTrigger": 0, "LensPosition": 425})
+        width = self.width_resolution.get()
+        height = self.height_resolution.get()
+        
+        if (width == '') or (height == ''):
+            width = 800
+            height = 600
+        else:
+            width = int(width)
+            height = int(height)
+            
+        print(f"Current resolution is : {width}x{height}")
+        self.picam2.configure(self.picam2.create_preview_configuration({"size":(width,height)}))
 
-
+    def set_camera_controls(self):
+        self.camera_controls = {"ExposureTime" : int(self.time_exposure.get()),
+                                "AnalogueGain" : float(self.camera_gain.get())}
+        self.camera_controls = {**self.camera_controls,**{"AfMode": controls.AfModeEnum.Continuous}}
+        self.picam2.set_controls(self.camera_controls)
+        for key, value in self.camera_controls.items():
+            print(key,value,sep=" : ")
 # end CameraApp class
 try:
     window = tk.Tk()
