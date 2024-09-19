@@ -273,7 +273,7 @@ class CameraApp:
             self.stop_preview_loop()
         
         pin_list = [2,3,4,5,6,7,8,9,10,11,12,14,15,16,17]
-        wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 760, 800, 850, 880, 940, 980]
+        wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 800, 850, 880, 940, 980]
         
         sampler_angles = self.sampler_protocol.get()
         polarizer_angles = self.polarizer_protocol.get()
