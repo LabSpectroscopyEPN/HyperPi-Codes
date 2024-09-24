@@ -14,7 +14,7 @@ class CameraApp:
     def __init__(self, root):
         self.root = root
         GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
-        self.bus = smbus.SMBus(1)
+        #self.bus = smbus.SMBus(1)
         self.pins = {"Sampler" : 0, "Polarizer" : 0, "LED Motor": 0} # initialize the pins dictionary
         self.camera_controls = {}
         self.width = 800
@@ -60,13 +60,18 @@ class CameraApp:
 
         self.sampler_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
         self.sampler_pin.grid(row = 0, column = 1, sticky = "ns", padx = 5, pady = 5)
+        self.sampler_pin.insert(0,"40")
 
         self.polarizer_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
         self.polarizer_pin.grid(row = 1, column = 1, sticky = "ns", padx = 5, pady = 5)
+        self.polarizer_pin.insert(0,"38")
         
         self.motor_pin = tk.Entry(self.pin_layout_frame, bg = "white", fg = "black", width = 25)
         self.motor_pin.grid(row = 2, column = 1, sticky = "ns", padx = 5, pady = 5)
-
+        self.motor_pin.insert(0,"36")
+        
+        self.set_pins()
+        
         tk.Button(self.pin_layout_frame, text="Set Pins",
                   command = self.set_pins, width = 20).grid(row = 3, column = 0,
                                                             columnspan = 2, sticky = "ns", padx = 5, pady = 5)
@@ -164,7 +169,7 @@ class CameraApp:
                                                                                  sticky = "ns", padx = 5, pady = 5)
         self.sampler_protocol = tk.Entry(self.measurement_controls_layout, bg = "white", fg = "black", width = 25)
         self.sampler_protocol.grid(row = 1, column = 0, sticky = "ns", padx = 5, pady = 5)
-        self.sampler_protocol.insert(0, "0-0-0")
+        self.sampler_protocol.insert(0, "0")
         
         tk.Label(self.measurement_controls_layout,
                  text = "Insert polarizer angle protocol as begin-end-step,\n or angle1, angle2, angle3,...").grid(row = 2, column = 0,
@@ -273,6 +278,7 @@ class CameraApp:
             self.stop_preview_loop()
         
         pin_list = [2,3,4,5,6,7,8,9,10,11,12,14,15,16,17]
+        #wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 760, 800, 850, 880, 940, 980]
         wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 800, 850, 880, 940, 980]
         
         sampler_angles = self.sampler_protocol.get()
@@ -317,13 +323,35 @@ class CameraApp:
             for sampler in sampler_angles:
                 #move sampler
                 self.set_angle(sampler,self.pins["Sampler"])
+                
                 #wait
-                time.sleep(2)
+                time.sleep(1)
+                
                 #create copol and depol folders for this sampler angle
                 copol_folder = os.path.join(new_folder, f"Copol_Sampler_{sampler}")
                 os.makedirs(copol_folder, exist_ok=True)
                 depol_folder = os.path.join(new_folder, f"Depol_Sampler_{sampler}")
                 os.makedirs(depol_folder, exist_ok=True)
+                
+                #capture background picture
+                #move leds motor
+                self.set_angle(0, self.pins["LED Motor"])
+                #move polarizer
+                self.set_angle(0,self.pins["Polarizer"])
+                time.sleep(1)
+                #capture copol
+                image_path = os.path.join(copol_folder, "background.jpg")
+                self.picam2.switch_mode_and_capture_file(still_config, image_path)
+                time.sleep(0.5)
+                print("Background copol taken")
+                #move polarizer motor
+                self.set_angle(90,self.pins["Polarizer"])
+                time.sleep(1)
+                image_path = os.path.join(depol_folder, "background.jpg")
+                self.picam2.switch_mode_and_capture_file(still_config, image_path)
+                time.sleep(0.5)
+                print("Background depol taken")
+                    
                 
                 for led in range(15):
                     #move leds motor
@@ -331,17 +359,17 @@ class CameraApp:
                     
                     #turn on led
                     self.bus.write_i2c_block_data(0x08, pin_list[led], [0])
-                    print("Led encendido")
+                    #print("Led encendido")
                     
                     #move polarizer motor
                     self.set_angle(0,self.pins["Polarizer"])
                     
-                    time.sleep(2)
+                    time.sleep(1)
                     
                     #capture copol
                     image_path = os.path.join(copol_folder, f"{wavelength_list[led]}.jpg")
                     self.picam2.switch_mode_and_capture_file(still_config, image_path)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     print("Copol taken")
                     
                     #move polarizer motor
@@ -351,12 +379,12 @@ class CameraApp:
                     
                     image_path = os.path.join(depol_folder, f"{wavelength_list[led]}.jpg")
                     self.picam2.switch_mode_and_capture_file(still_config, image_path)
-                    time.sleep(1)
+                    time.sleep(0.5)
                     print("Depol taken")
                     
-                    #turn off led
+                    #turn of led
                     self.bus.write_i2c_block_data(0x08, pin_list[led], [1])                   
-                    print("Led apagado")
+                    #print("Led apagado")
                     time.sleep(1)
         
         self.picam2.stop_preview()
@@ -374,3 +402,4 @@ try:
 finally:
     print("\n","Bye","\n",sep=10*"-")
     GPIO.cleanup()
+
