@@ -15,10 +15,20 @@ class CameraApp:
         self.root = root
         GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
         #self.bus = smbus.SMBus(1)
-        self.pins = {"Sampler" : 0, "Polarizer" : 0, "LED Motor": 0} # initialize the pins dictionary
-        self.camera_controls = {}
+        self.pins = {"Sampler" : 0,
+                     "Polarizer" : 0,
+                     "LED Motor": 0} # initialize the pins dictionary
         self.width = 800
         self.height = 600
+        self.camera_controls = {"ExposureTime":100000,
+                                "AnalogueGain":1.0,
+                                "AfMode":0,
+                                "AfTrigger":0,
+                                "LensPosition":1.0,
+                                "Brightness":0.0,
+                                "Contrast":1.0,
+                                "Saturation":1.0,
+                                "Sharpness":1.0} # initialize the camera controls dictionary
         self.preview_thread = None # thread for start and stop preview
         self.stop_preview_event = threading.Event() # defining an event
         self.picam2 = Picamera2() # create a picamera2 object
@@ -108,8 +118,15 @@ class CameraApp:
         #--------------------------------------------------
         # Adding a preview controls
         
+        tk.Button(self.mid_column, text = "Select controls file :",
+                  command = self.read_controls_file).grid(row = 0, column = 0,
+                                                     sticky = "ew", padx = 5, pady = 5)
+        
+        self.control_file_entry = tk.Entry(self.mid_column, bg = "white", fg = "black")
+        self.control_file_entry.grid(row = 0, column = 1, sticky = "ew", padx = 5, pady = 5)
+        
         self.preview_layout = tk.Frame(self.mid_column, relief = tk.RAISED, bd=2)
-        self.preview_layout.grid(row = 0, column = 0, sticky = "ns")
+        self.preview_layout.grid(row = 1, column = 0, columnspan = 2, sticky = "ns")
         
         tk.Label(self.preview_layout, text = "Width :").grid(row = 0, column = 0,
                                                              sticky = "e", padx = 5, pady = 5)
@@ -134,21 +151,28 @@ class CameraApp:
                                           width = 15)
         self.btn_stop_preview.grid(row=3, column=1, padx=5, pady=5)
         
-        tk.Label(self.preview_layout, text = "Time Exposure :").grid(row = 4, column = 0,
+        tk.Label(self.preview_layout, text = "Exposure time:").grid(row = 4, column = 0,
                                                                      sticky = "e", padx = 5, pady = 5)
         
-        self.time_exposure = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
-        self.time_exposure.grid(row = 4, column = 1, sticky = "ns", padx = 5, pady = 5)
+        self.exposure_time = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.exposure_time.grid(row = 4, column = 1, sticky = "ns", padx = 5, pady = 5)
         
         
-        tk.Label(self.preview_layout, text = "Gain :").grid(row = 5, column = 0,
+        tk.Label(self.preview_layout, text = "Analogue gain :").grid(row = 5, column = 0,
                                                                      sticky = "e", padx = 5, pady = 5)
         
-        self.camera_gain = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
-        self.camera_gain.grid(row = 5, column = 1, sticky = "ns", padx = 5, pady = 5)
+        self.analogue_gain = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.analogue_gain.grid(row = 5, column = 1, sticky = "ns", padx = 5, pady = 5)
+        
+        
+        tk.Label(self.preview_layout, text = "Lens Position :").grid(row = 6, column = 0,
+                                                                     sticky = "e", padx = 5, pady = 5)
+        
+        self.lens_position = tk.Entry(self.preview_layout, bg = "white", fg = "black", width = 25)
+        self.lens_position.grid(row = 6, column = 1, sticky = "ns", padx = 5, pady = 5)        
         
         self.btn_set_controls = tk.Button(self.preview_layout, text="Set Camera Controls", command = self.set_camera_controls, width = 20)
-        self.btn_set_controls.grid(row = 6, column = 0, columnspan = 2, sticky = "ns", padx = 5, pady = 5)
+        self.btn_set_controls.grid(row = 7, column = 0, columnspan = 2, sticky = "ns", padx = 5, pady = 5)
 
         # End preview controls
         #--------------------------------------------------
@@ -228,7 +252,7 @@ class CameraApp:
     def preview_loop(self):
         self.picam2.start_preview(Preview.QTGL)
         self.set_camera_configuration()
-        self.picam2.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        self.set_camera_controls()
         self.picam2.start()
         while not self.stop_preview_event.is_set():
             print("Preview displayed")
@@ -243,7 +267,11 @@ class CameraApp:
         
         if (width == '') or (height == ''):
             self.width = 800
+            self.width_resolution.delete(0,tk.END)
+            self.width_resolution.insert(0,self.width)
             self.height = 600
+            self.height_resolution.delete(0,tk.END)
+            self.height_resolution.insert(0,self.height)
         else:
             self.width = int(width)
             self.height = int(height)
@@ -252,18 +280,67 @@ class CameraApp:
         self.picam2.configure(self.picam2.create_preview_configuration({"size":(self.width,self.height)}))
 
     def set_camera_controls(self):
-        time_exposure = self.time_exposure.get()
-        camera_gain = self.camera_gain.get()
+        exposure_time = self.exposure_time.get()
+        analogue_gain = self.analogue_gain.get()
+        lens_position = self.lens_position.get()
         
-        if not (time_exposure == ''):
-            self.camera_controls["ExposureTime"] = int(time_exposure)
-        if not (camera_gain == ''):
-            self.camera_controls["AnalogueGain"] = float(camera_gain)
+        if exposure_time == '':
+            self.exposure_time.delete(0,tk.END)
+            self.exposure_time.insert(0,self.camera_controls["ExposureTime"])
+        else:
+            self.camera_controls["ExposureTime"] = int(exposure_time)
+        if analogue_gain == '':
+            self.analogue_gain.delete(0,tk.END)
+            self.analogue_gain.insert(0,self.camera_controls["AnalogueGain"])
+        else:
+            self.camera_controls["AnalogueGain"] = float(analogue_gain)    
+        if lens_position == '':
+            self.lens_position.delete(0,tk.END)
+            self.lens_position.insert(0,self.camera_controls["LensPosition"])
+        else:
+            self.camera_controls["LensPosition"] = float(lens_position)
 
-        self.camera_controls = {**self.camera_controls,**{"AfMode": controls.AfModeEnum.Continuous}}
         self.picam2.set_controls(self.camera_controls)
         for key, value in self.camera_controls.items():
             print(key,value,sep=" : ")
+            
+    def read_controls_file(self):
+        file_path = filedialog.askopenfilename(title="Select you control file as .txt",
+                                               filetypes=[("Text files","*.txt")])
+        if file_path:
+            self.control_file_entry.delete(0, tk.END)
+            self.control_file_entry.insert(0, file_path)
+            
+            with open(file_path, 'r') as file:
+                # Read the content of the file
+                content = [line.strip().split() for line in file.readlines()]
+            # Create a dictionary to store the camera controls
+            camera_controls = {}
+            for line in content:
+                control_name = line[0]
+                control_value = int(line[1]) if line[2]=="Int" else (float(line[1]) if line[2]=="Float" else "NonValid")
+                camera_controls[control_name] = control_value
+            
+            try:
+                self.width = camera_controls["Width"]
+                self.height = camera_controls["Height"]
+                self.width_resolution.delete(0,tk.END)
+                self.width_resolution.insert(0,self.width)
+                self.height_resolution.delete(0,tk.END)
+                self.height_resolution.insert(0,self.height)
+                del camera_controls["Width"]
+                del camera_controls["Height"]
+            except:
+                print("Non wide nor height available, please check code")
+                
+            self.camera_controls = camera_controls
+            self.exposure_time.delete(0,tk.END)
+            self.exposure_time.insert(0,self.camera_controls["ExposureTime"])
+            self.analogue_gain.delete(0,tk.END)
+            self.analogue_gain.insert(0,self.camera_controls["AnalogueGain"])
+            self.lens_position.delete(0,tk.END)
+            self.lens_position.insert(0,self.camera_controls["LensPosition"])
+            self.set_camera_controls()
             
     def select_folder(self):
         folder_path = filedialog.askdirectory()
@@ -343,14 +420,14 @@ class CameraApp:
                 image_path = os.path.join(copol_folder, "background.jpg")
                 self.picam2.switch_mode_and_capture_file(still_config, image_path)
                 time.sleep(0.5)
-                print("Background copol taken")
+                print("Copol taken")
                 #move polarizer motor
                 self.set_angle(90,self.pins["Polarizer"])
                 time.sleep(1)
                 image_path = os.path.join(depol_folder, "background.jpg")
                 self.picam2.switch_mode_and_capture_file(still_config, image_path)
                 time.sleep(0.5)
-                print("Background depol taken")
+                print("Depol taken")
                     
                 
                 for led in range(15):
@@ -358,8 +435,8 @@ class CameraApp:
                     self.set_angle(12*led, self.pins["LED Motor"])
                     
                     #turn on led
-                    self.bus.write_i2c_block_data(0x08, pin_list[led], [0])
-                    #print("Led encendido")
+                    #self.bus.write_i2c_block_data(0x08, pin_list[led], [0])
+                    print("Led encendido")
                     
                     #move polarizer motor
                     self.set_angle(0,self.pins["Polarizer"])
@@ -383,14 +460,15 @@ class CameraApp:
                     print("Depol taken")
                     
                     #turn of led
-                    self.bus.write_i2c_block_data(0x08, pin_list[led], [1])                   
-                    #print("Led apagado")
+                    #self.bus.write_i2c_block_data(0x08, pin_list[led], [1])                   
+                    print("Led apagado")
                     time.sleep(1)
         
         self.picam2.stop_preview()
         self.picam2.stop()
         
         print("\nMeasurement concluded")
+        
         
 # end CameraApp class
 try:
