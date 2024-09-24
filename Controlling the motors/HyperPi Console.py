@@ -125,7 +125,7 @@ class CameraApp:
         self.control_file_entry = tk.Entry(self.mid_column, bg = "white", fg = "black")
         self.control_file_entry.grid(row = 0, column = 1, sticky = "ew", padx = 5, pady = 5)
         
-        self.preview_layout = tk.Frame(self.mid_column, relief = tk.RAISED, bd=2)
+        self.preview_layout = tk.Frame(self.mid_column, relief = tk.GROOVE, bd=2)
         self.preview_layout.grid(row = 1, column = 0, columnspan = 2, sticky = "ns")
         
         tk.Label(self.preview_layout, text = "Width :").grid(row = 0, column = 0,
@@ -396,6 +396,16 @@ class CameraApp:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             new_folder = os.path.join(self.parent_folder, f"Measurement_{timestamp}")
             os.makedirs(new_folder, exist_ok=True)
+
+            #save camera controls
+            controls_file_path = os.path.join(new_folder, "Controls Setting.txt")
+            
+            # Rewrite the content of the file
+            with open(controls_file_path, 'w') as file:
+                # Write the content to the file
+                for control, value in self.camera_controls.items():
+                    line = f"{control}	{value}	{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
+                    file.write(line)
             
             for sampler in sampler_angles:
                 #move sampler
