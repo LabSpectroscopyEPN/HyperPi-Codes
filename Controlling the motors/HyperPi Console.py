@@ -14,7 +14,7 @@ class CameraApp:
     def __init__(self, root):
         self.root = root
         GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
-        #self.bus = smbus.SMBus(1)
+        self.bus = smbus.SMBus(1)
         self.pins = {"Sampler" : 0,
                      "Polarizer" : 0,
                      "LED Motor": 0} # initialize the pins dictionary
@@ -445,7 +445,7 @@ class CameraApp:
                     self.set_angle(12*led, self.pins["LED Motor"])
                     
                     #turn on led
-                    #self.bus.write_i2c_block_data(0x08, pin_list[led], [0])
+                    self.bus.write_i2c_block_data(0x08, pin_list[led], [0])
                     print("Led encendido")
                     
                     #move polarizer motor
@@ -470,7 +470,7 @@ class CameraApp:
                     print("Depol taken")
                     
                     #turn of led
-                    #self.bus.write_i2c_block_data(0x08, pin_list[led], [1])                   
+                    self.bus.write_i2c_block_data(0x08, pin_list[led], [1])                   
                     print("Led apagado")
                     time.sleep(1)
         
