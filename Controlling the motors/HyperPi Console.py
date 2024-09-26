@@ -380,7 +380,8 @@ class CameraApp:
         for i,j in zip(sampler_angles,polarizer_angles):
             assert type(i) == float
             assert type(j) == float
-        
+
+        self.set_camera_configuration()
         preview_config = self.picam2.create_preview_configuration({"size":(self.width,self.height)})
         still_config = self.picam2.create_still_configuration({"size":(self.width,self.height)})
         
@@ -402,6 +403,8 @@ class CameraApp:
             
             # Rewrite the content of the file
             with open(controls_file_path, 'w') as file:
+                for i,j in zip(["Width","Height"],[self.width,self.height]):
+                    file.write(f"{i}    {j}    Int \n")
                 # Write the content to the file
                 for control, value in self.camera_controls.items():
                     line = f"{control}	{value}	{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
