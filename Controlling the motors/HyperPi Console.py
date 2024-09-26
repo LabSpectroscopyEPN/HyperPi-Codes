@@ -386,6 +386,7 @@ class CameraApp:
         
         self.picam2.configure(preview_config)
         self.picam2.start_preview(Preview.QTGL)
+        self.set_camera_configuration()
         self.set_camera_controls()
         self.picam2.start()
         time.sleep(7)
@@ -403,7 +404,7 @@ class CameraApp:
             # Rewrite the content of the file
             with open(controls_file_path, 'w') as file:
                 for i,j in zip(["Width","Height"],[self.width,self.height]):
-                    file.write(f"{i}    {j}    'Int' \n")
+                    file.write(f"{i}    {j}    Int \n")
                 # Write the content to the file
                 for control, value in self.camera_controls.items():
                     line = f"{control}	{value}	{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
