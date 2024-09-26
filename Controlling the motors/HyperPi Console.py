@@ -380,13 +380,13 @@ class CameraApp:
         for i,j in zip(sampler_angles,polarizer_angles):
             assert type(i) == float
             assert type(j) == float
-        
+
+        self.set_camera_configuration()
         preview_config = self.picam2.create_preview_configuration({"size":(self.width,self.height)})
         still_config = self.picam2.create_still_configuration({"size":(self.width,self.height)})
         
         self.picam2.configure(preview_config)
         self.picam2.start_preview(Preview.QTGL)
-        self.set_camera_configuration()
         self.set_camera_controls()
         self.picam2.start()
         time.sleep(7)
