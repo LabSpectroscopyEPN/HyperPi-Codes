@@ -404,10 +404,10 @@ class CameraApp:
             # Rewrite the content of the file
             with open(controls_file_path, 'w') as file:
                 for i,j in zip(["Width","Height"],[self.width,self.height]):
-                    file.write(f"{i}    {j}    Int \n")
+                    file.write(f"{i}\t{j}\t{'Int'} \n")
                 # Write the content to the file
                 for control, value in self.camera_controls.items():
-                    line = f"{control}	{value}	{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
+                    line = f"{control}\t{value}\t{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
                     file.write(line)
             
             for sampler in sampler_angles:
