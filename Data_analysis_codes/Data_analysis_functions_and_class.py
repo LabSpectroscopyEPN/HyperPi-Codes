@@ -87,7 +87,7 @@ def read_reference(reference_reflectance,extension=".tiff"):
         homogeneity = np.mean(homogeneity, axis=tuple(range(homogeneity.ndim)))
 
     homogeneity = homogeneity / np.mean(homogeneity)
-    return led_intensities, homogeneity
+    return led_intensities, homogeneity, folder_path
 
 
 def read_hyperpi_data(reference, flatfield_shape, extension=".tiff"):
@@ -126,7 +126,7 @@ def read_hyperpi_data(reference, flatfield_shape, extension=".tiff"):
                 hyperpi_data[:,:,wave_index,sample,0] = to_data(copol_folder, wavelength, wave_index, sample, 0) / dividend
                 hyperpi_data[:,:,wave_index,sample,1] = to_data(depol_folder, wavelength, wave_index, sample, 1) / dividend
 
-    return hyperpi_data
+    return hyperpi_data, folder_path
 
 class make_mask:
     def __init__(self,original_image):
@@ -172,19 +172,19 @@ class make_mask:
         self.fig_mask.show()
     
 
-try:
-    reference, flatfield_shape = read_reference(0.7)
-    hyperpi_data = read_hyperpi_data(reference,flatfield_shape)
+#try:
+    #reference, flatfield_shape = read_reference(0.7)
+    #hyperpi_data = read_hyperpi_data(reference,flatfield_shape)
 
-    mono_image = plt.figure("Monochromatic Image", dpi = 100)
+    #mono_image = plt.figure("Monochromatic Image", dpi = 100)
 
-    im_xy = hyperpi_data[:,:,2,0,0]
-    im_xy = np.maximum(im_xy,0)
-    im_for_visualization = np.sqrt(im_xy)
-    plt.imshow(im_for_visualization, cmap='gray')#, norm=Normalize(vmin=0, vmax=1))
-    plt.colorbar()
-    plt.xlabel('x (pixel)')
-    plt.ylabel('y (pixel)')
-    plt.show()
-except Exception as e:
-    print(f"Error araised : {e}")
+    #im_xy = hyperpi_data[:,:,2,0,0]
+    #im_xy = np.maximum(im_xy,0)
+    #im_for_visualization = np.sqrt(im_xy)
+    #plt.imshow(im_for_visualization, cmap='gray')#, norm=Normalize(vmin=0, vmax=1))
+    #plt.colorbar()
+    #plt.xlabel('x (pixel)')
+    #plt.ylabel('y (pixel)')
+    #plt.show()
+#except Exception as e:
+    #print(f"Error araised : {e}")
