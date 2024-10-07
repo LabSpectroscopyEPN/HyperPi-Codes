@@ -20,7 +20,9 @@ class CameraApp:
                      "LED Motor": 0} # initialize the pins dictionary
         self.width = 800
         self.height = 600
-        self.camera_controls = {"ExposureTime":100000,
+        self.camera_controls = {"AwbEnable": False,
+                                "ColourGains": (1.0, 1.0),
+                                "ExposureTime":100000,
                                 "AnalogueGain":1.0,
                                 "AfMode":0,
                                 "AfTrigger":0,
