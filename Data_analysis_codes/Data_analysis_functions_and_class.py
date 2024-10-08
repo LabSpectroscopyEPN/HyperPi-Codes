@@ -126,7 +126,7 @@ def read_hyperpi_data(reference, flatfield_shape, extension=".tiff"):
                 hyperpi_data[:,:,wave_index,sample,0] = to_data(copol_folder, wavelength, wave_index, sample, 0) / dividend
                 hyperpi_data[:,:,wave_index,sample,1] = to_data(depol_folder, wavelength, wave_index, sample, 1) / dividend
 
-    return hyperpi_data, folder_path
+    return hyperpi_data, folder_path, copol_folders
 
 class make_mask:
     def __init__(self,original_image):
@@ -170,21 +170,3 @@ class make_mask:
                 new_image[:,:,i] = new_image[:,:,i]/np.max(new_image[:,:,i])
         self.ax_mask.imshow(new_image)
         self.fig_mask.show()
-    
-
-#try:
-    #reference, flatfield_shape = read_reference(0.7)
-    #hyperpi_data = read_hyperpi_data(reference,flatfield_shape)
-
-    #mono_image = plt.figure("Monochromatic Image", dpi = 100)
-
-    #im_xy = hyperpi_data[:,:,2,0,0]
-    #im_xy = np.maximum(im_xy,0)
-    #im_for_visualization = np.sqrt(im_xy)
-    #plt.imshow(im_for_visualization, cmap='gray')#, norm=Normalize(vmin=0, vmax=1))
-    #plt.colorbar()
-    #plt.xlabel('x (pixel)')
-    #plt.ylabel('y (pixel)')
-    #plt.show()
-#except Exception as e:
-    #print(f"Error araised : {e}")
