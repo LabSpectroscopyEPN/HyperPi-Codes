@@ -24,6 +24,8 @@ class CameraApp:
                                 "ColourGains": (1.0, 1.0),
                                 "ExposureTime":100000,
                                 "AnalogueGain":1.0,
+                                "AwbEnable":False,
+                                "ColourGains":(1.0,1.0),
                                 "AfMode":0,
                                 "AfTrigger":0,
                                 "LensPosition":1.0,
@@ -316,11 +318,19 @@ class CameraApp:
             with open(file_path, 'r') as file:
                 # Read the content of the file
                 content = [line.strip().split() for line in file.readlines()]
+
+            data_type = {"Int":int,
+                         "Float":float,
+                         "Bool":bool,
+                         "String":str,
+                         "List":eval,
+                         "Tuple":eval}
             # Create a dictionary to store the camera controls
             camera_controls = {}
             for line in content:
                 control_name = line[0]
-                control_value = int(line[1]) if line[2]=="Int" else (float(line[1]) if line[2]=="Float" else "NonValid")
+                #control_value = int(line[1]) if line[2]=="Int" else (float(line[1]) if line[2]=="Float" else "NonValid")
+                control_value = data_type[line[2]](line[1])
                 camera_controls[control_name] = control_value
             
             try:
@@ -359,6 +369,12 @@ class CameraApp:
         pin_list = [2,3,4,5,6,7,8,9,10,11,12,14,15,16,17]
         #wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 760, 800, 850, 880, 940, 980]
         wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 800, 850, 880, 940, 980]
+        types_for_print = {int:"Int",
+                          float:"Float",
+                          bool:"Bool",
+                          str:"String",
+                          list:"List",
+                          tuple:"Tuple"}
         
         sampler_angles = self.sampler_protocol.get()
         polarizer_angles = self.polarizer_protocol.get()
@@ -409,7 +425,7 @@ class CameraApp:
                     file.write(f"{i}\t{j}\t{'Int'} \n")
                 # Write the content to the file
                 for control, value in self.camera_controls.items():
-                    line = f"{control}\t{value}\t{'Int' if type(value)==int else ('Float' if type(value)==float else 'NonValid')} \n"
+                    line = f"{control}\t{value}\t{types_for_print[type(value)]} \n"
                     file.write(line)
             
             for sampler in sampler_angles:
