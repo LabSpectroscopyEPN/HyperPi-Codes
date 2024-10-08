@@ -228,6 +228,222 @@ class spectrum:
         for i in range(len(self.leds)):
             print(self.leds[i],"\t"*3,self.spectrum[i])
 
+class FalseColorImage:
+    def __init__(self,root,data,leds,angles):
+        self.root = root
+        self.data = data
+        self.leds = leds
+        self.sampler_angles = angles
+
+        self.root.title("False color image (copolarized)")
+        
+        #define canvas
+        self.fig, self.ax = plt.subplots(figsize = (7,6), ncols=1)
+        self.canvas = FigureCanvasTkAgg(self.fig, master = self.root)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().grid(row = 0, column = 0, columnspan = 3)
+
+        #menubutton for leds R
+        self.led_r = tk.IntVar(value = self.leds[8])
+        self.mbtn_leds_r = tk.Menubutton(self.root, text = "Select R-LED", relief = tk.RAISED)
+        self.mbtn_leds_r.grid()
+        self.mbtn_leds_r.menu = tk.Menu(self.mbtn_leds_r, tearoff = 0)
+        self.mbtn_leds_r["menu"] = self.mbtn_leds_r.menu
+
+        for led in self.leds:
+            self.mbtn_leds_r.menu.add_radiobutton(label = str(led), variable = self.led_r, value = led)
+
+        self.mbtn_leds_r.grid(row = 1, column = 0, sticky = "nsew")
+        self.led_r.trace_add("write", lambda *args: self.update_image())
+
+        #menubutton for leds G
+        self.led_g = tk.IntVar(value = self.leds[3])
+        self.mbtn_leds_g = tk.Menubutton(self.root, text = "Select G-LED", relief = tk.RAISED)
+        self.mbtn_leds_g.grid()
+        self.mbtn_leds_g.menu = tk.Menu(self.mbtn_leds_g, tearoff = 0)
+        self.mbtn_leds_g["menu"] = self.mbtn_leds_g.menu
+
+        for led in self.leds:
+            self.mbtn_leds_g.menu.add_radiobutton(label = str(led), variable = self.led_g, value = led)
+
+        self.mbtn_leds_g.grid(row = 1, column = 1, sticky = "nsew")
+        self.led_g.trace_add("write", lambda *args: self.update_image())
+
+        #menubutton for leds B
+        self.led_b = tk.IntVar(value = self.leds[0])
+        self.mbtn_leds_b = tk.Menubutton(self.root, text = "Select B-LED", relief = tk.RAISED)
+        self.mbtn_leds_b.grid()
+        self.mbtn_leds_b.menu = tk.Menu(self.mbtn_leds_b, tearoff = 0)
+        self.mbtn_leds_b["menu"] = self.mbtn_leds_b.menu
+
+        for led in self.leds:
+            self.mbtn_leds_b.menu.add_radiobutton(label = str(led), variable = self.led_b, value = led)
+
+        self.mbtn_leds_b.grid(row = 1, column = 2, sticky = "nsew")
+        self.led_b.trace_add("write", lambda *args: self.update_image())
+        
+        #menubutton for angles
+        self.current_angle = tk.DoubleVar(value = self.sampler_angles[0])
+        self.mbtn_angles = tk.Menubutton(self.root, text = "Select angle", relief = tk.RAISED)
+        self.mbtn_angles.grid()
+        self.mbtn_angles.menu = tk.Menu(self.mbtn_angles, tearoff = 0)
+        self.mbtn_angles["menu"] = self.mbtn_angles.menu
+
+        for angle in self.sampler_angles:
+            self.mbtn_angles.menu.add_radiobutton(label = str(angle), variable = self.current_angle, value = angle)
+
+        self.mbtn_angles.grid(row = 2, column = 0, sticky = "nsew")
+        self.current_angle.trace_add("write", lambda *args: self.update_image())
+
+        #button for entry
+        tk.Button(self.root, text = "Set Gain",
+                  command = self.update_image).grid(row = 2, column = 1, sticky = "ew", padx = 5, pady = 5)
+        
+        #gain entry
+        self.gain = tk.Entry(self.root, bg = "white", fg = "black", width = 12)
+        self.gain.grid(row = 2, column = 2, sticky = "nsew")
+        self.gain.insert(0,"1.0")
+
+        #save image
+        tk.Button(self.root, text = "Save image",
+                  command = self.save_image).grid(row = 3, column = 0, sticky = "ew", padx = 5, pady = 5)
+
+        #close button
+        tk.Button(self.root, text = "Close window",
+                  command = self.root.destroy).grid(row = 3, column = 2,sticky = "ew", padx = 5, pady = 5)
+
+        self.update_image()
+
+    def update_image(self):
+        r_in = self.leds.index(self.led_r.get())
+        g_in = self.leds.index(self.led_g.get())
+        b_in = self.leds.index(self.led_b.get())
+        angle_in = self.sampler_angles.index(self.current_angle.get())
+        gain = float(self.gain.get())
+        
+        false_color_im = np.stack([self.data[:,:,r_in,angle_in,0],
+                                  self.data[:,:,g_in,angle_in,0],
+                                  self.data[:,:,b_in,angle_in,0]],
+                                  axis=-1)
+
+        false_color_im = np.maximum(false_color_im, 0)
+        false_color_im = gain*np.sqrt(false_color_im)
+        self.ax.clear()
+        self.img = self.ax.imshow(false_color_im, cmap='nipy_spectral')
+        self.ax.set_xlabel('x (pixel)')
+        self.ax.set_ylabel('y (pixel)')
+        self.ax.set_title(f"R({self.leds[r_in]}nm)    G({self.leds[g_in]}nm)    B({self.leds[b_in]}nm)")
+        self.canvas.draw()
+
+    def save_image(self):
+        folder_path = filedialog.askdirectory(title = "Select save folder.")
+        if folder_path:
+            file_path = os.path.join(folder_path, f"FC_image_R-{self.led_r.get()}nm_G-{self.led_g.get()}nm_B-{self.led_b.get()}nm_{self.current_angle.get()}d.png")
+            self.fig.savefig(file_path, bbox_inches = 'tight')
+            print("Image saved at:",file_path,sep='\n')
+
+class ElipsoImage:
+    def __init__(self,root,data,leds,angles):
+        self.root = root
+        self.data = data
+        self.leds = leds
+        self.sampler_angles = angles
+
+        self.root.title("Copolarized-Depolarized image")
+        
+        #define canvas
+        self.fig, self.ax = plt.subplots(figsize = (7,6), ncols=1)
+        self.canvas = FigureCanvasTkAgg(self.fig, master = self.root)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().grid(row = 0, column = 0, columnspan = 3)
+
+        #menubutton for leds R
+        self.current_led = tk.IntVar(value = self.leds[0])
+        self.mbtn_leds = tk.Menubutton(self.root, text = "Select LED", relief = tk.RAISED)
+        self.mbtn_leds.grid()
+        self.mbtn_leds.menu = tk.Menu(self.mbtn_leds, tearoff = 0)
+        self.mbtn_leds["menu"] = self.mbtn_leds.menu
+
+        for led in self.leds:
+            self.mbtn_leds.menu.add_radiobutton(label = str(led), variable = self.current_led, value = led)
+
+        self.mbtn_leds.grid(row = 1, column = 0, sticky = "nsew")
+        self.current_led.trace_add("write", lambda *args: self.update_image())
+
+        #menubutton for angles
+        self.current_angle = tk.DoubleVar(value = self.sampler_angles[0])
+        self.mbtn_angles = tk.Menubutton(self.root, text = "Select angle", relief = tk.RAISED)
+        self.mbtn_angles.grid()
+        self.mbtn_angles.menu = tk.Menu(self.mbtn_angles, tearoff = 0)
+        self.mbtn_angles["menu"] = self.mbtn_angles.menu
+
+        for angle in self.sampler_angles:
+            self.mbtn_angles.menu.add_radiobutton(label = str(angle), variable = self.current_angle, value = angle)
+
+        self.mbtn_angles.grid(row = 1, column = 1, sticky = "nsew")
+        self.current_angle.trace_add("write", lambda *args: self.update_image())
+
+        #save image
+        tk.Button(self.root, text = "Save image",
+                  command = self.save_image).grid(row = 1, column = 2, sticky = "ew", padx = 5, pady = 5)
+
+        tk.Label(self.root, text = "Copol-Depol Gain :").grid(row = 2, column = 0, sticky = "ew", padx = 5, pady = 5)
+        
+        #gain entry
+        self.codepol_gain = tk.Entry(self.root, bg = "white", fg = "black", width = 12)
+        self.codepol_gain.grid(row = 2, column = 1, sticky = "nsew")
+        self.codepol_gain.insert(0,"1.0")
+
+        tk.Button(self.root, text = "Set Gains",
+                  command = self.update_image).grid(row = 2, column = 2, sticky = "ew", padx = 5, pady = 5)
+
+        tk.Label(self.root, text = "Depol Gain :").grid(row = 3, column = 0, sticky = "ew", padx = 5, pady = 5)
+        
+        #gain entry
+        self.depol_gain = tk.Entry(self.root, bg = "white", fg = "black", width = 12)
+        self.depol_gain.grid(row = 3, column = 1, sticky = "nsew")
+        self.depol_gain.insert(0,"1.0")
+
+        tk.Label(self.root, text = "Copol Gain :").grid(row = 4, column = 0, sticky = "ew", padx = 5, pady = 5)
+        
+        #gain entry
+        self.copol_gain = tk.Entry(self.root, bg = "white", fg = "black", width = 12)
+        self.copol_gain.grid(row = 4, column = 1, sticky = "nsew")
+        self.copol_gain.insert(0,"0.0")
+
+        #close button
+        tk.Button(self.root, text = "Close window",
+                  command = self.root.destroy).grid(row = 4, column = 2,sticky = "ew", padx = 5, pady = 5)
+
+        self.update_image()
+
+    def update_image(self):
+        led_in = self.leds.index(self.current_led.get())
+        angle_in = self.sampler_angles.index(self.current_angle.get())
+        codepol_gain = float(self.codepol_gain.get())
+        copol_gain = float(self.copol_gain.get())
+        depol_gain = float(self.depol_gain.get())
+        
+        pol_falsecolor = np.stack([depol_gain*self.data[:,:,led_in,angle_in,1],
+                                   codepol_gain*(self.data[:,:,led_in,angle_in,0] - self.data[:,:,led_in,angle_in,1]),
+                                   copol_gain*self.data[:,:,led_in,angle_in,0]], axis=-1)
+        
+        pol_falsecolor = np.clip(pol_falsecolor, 0, 1)
+        
+        self.ax.clear()
+        self.img = self.ax.imshow(pol_falsecolor)
+        self.ax.set_xlabel('x (pixel)')
+        self.ax.set_ylabel('y (pixel)')
+        self.ax.set_title(f"R : depol    G : copol - depol")
+        self.canvas.draw()
+
+    def save_image(self):
+        folder_path = filedialog.askdirectory(title = "Select save folder.")
+        if folder_path:
+            file_path = os.path.join(folder_path, f"Copol-Depol_image_{self.current_led.get()}nm_{self.current_angle.get()}d.png")
+            self.fig.savefig(file_path, bbox_inches = 'tight')
+            print("Image saved at:",file_path,sep='\n')
+        
 
 class Data_analysis:
     def __init__(self, root, leds):
@@ -242,9 +458,9 @@ class Data_analysis:
         #set GUI frames
         self.root.rowconfigure(0, weight = 1)
         self.root.rowconfigure(1, weight = 1)
-        self.root.columnconfigure(0, weight = 1, minsize = 300)
-        self.root.columnconfigure(1, weight = 1, minsize = 300)
-        self.root.columnconfigure(2, weight = 1, minsize = 300)
+        self.root.columnconfigure(0, weight = 1, minsize = 250)
+        self.root.columnconfigure(1, weight = 1, minsize = 250)
+        self.root.columnconfigure(2, weight = 1, minsize = 250)
 
         self.header = tk.Frame(self.root, relief = tk.RAISED, bd = 2)
         self.right_col = tk.Frame(self.root, relief = tk.RAISED, bd=2)
@@ -252,9 +468,9 @@ class Data_analysis:
         self.left_col = tk.Frame(self.root, relief = tk.RAISED, bd=2)
 
         self.header.grid(row = 0, column = 0, columnspan = 3, sticky = "nsew")
-        self.right_col.grid(row = 1, column = 0, sticky = "nsew")
+        self.right_col.grid(row = 1, column = 2, sticky = "nsew")
         self.mid_col.grid(row = 1, column = 1, sticky = "nsew")
-        self.left_col.grid(row = 1, column = 2, sticky = "nsew")
+        self.left_col.grid(row = 1, column = 0, sticky = "nsew")
 
         #set header
         tk.Button(self.header, text = "Reference folder :",
@@ -273,10 +489,17 @@ class Data_analysis:
         self.meas_folder_entry.grid(row = 1, column = 1, columnspan = 2,
                                          sticky = "ew", padx = 5, pady = 5)
 
-        #set right-column/monochromatic image
-        tk.Button(self.right_col, text = "Generate Monochromatic Image",
-                  command = self.gen_monochromatic).grid(row = 0, column = 0,
-                                                         sticky = "ew", padx = 5, pady = 5)
+        #set left-column/monochromatic image
+        tk.Button(self.left_col, text = "Generate Monochromatic Image",
+                  command = self.gen_monochromatic).pack()#.grid(row = 0, column = 0, sticky = "ns", padx = 5, pady = 5)
+
+        #set mid-column/false color image
+        tk.Button(self.mid_col, text = "Generate False Color Image",
+                  command = self.gen_false_color_image).pack()#.grid(row = 0, column = 0,sticky = "ns", padx = 5, pady = 5)
+
+        #set right-column/false color image
+        tk.Button(self.right_col, text = "Generate Copol-Depol Image",
+                  command = self.gen_elipso_image).pack()#.grid(row = 0, column = 0,sticky = "ns", padx = 5, pady = 5)
         
 
     def get_reference(self, progress_window, callback):
@@ -326,6 +549,13 @@ class Data_analysis:
         new_window = tk.Toplevel(self.root)
         new_mono = Monochromatic_image(new_window,self.hyperpi_data,self.leds,self.sample_angles)
 
+    def gen_false_color_image(self):
+        new_window = tk.Toplevel(self.root)
+        new_fci = FalseColorImage(new_window,self.hyperpi_data,self.leds,self.sample_angles)
+
+    def gen_elipso_image(self):
+        new_window = tk.Toplevel(self.root)
+        new_elipso = ElipsoImage(new_window,self.hyperpi_data,self.leds,self.sample_angles)
 
 try:
     window = tk.Tk()
