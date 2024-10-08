@@ -22,6 +22,7 @@ class CameraApp:
         self.height = 600
         self.camera_controls = {"ExposureTime":100000,
                                 "AnalogueGain":1.0,
+                                "AwbEnable":False,
                                 "ColourGains":(1.0,1.0),
                                 "AfMode":0,
                                 "AfTrigger":0,
@@ -318,6 +319,7 @@ class CameraApp:
 
             data_type = {"Int":int,
                          "Float":float,
+                         "Bool":bool,
                          "String":str,
                          "List":eval,
                          "Tuple":eval}
@@ -367,6 +369,7 @@ class CameraApp:
         wavelength_list = [445, 490, 520, 560, 580, 600, 620, 660, 680, 730, 800, 850, 880, 940, 980]
         types_for_print = {int:"Int",
                           float:"Float",
+                          bool:"Bool",
                           str:"String",
                           list:"List",
                           tuple:"Tuple"}
