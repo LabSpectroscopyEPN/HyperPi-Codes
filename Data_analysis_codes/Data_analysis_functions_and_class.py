@@ -29,6 +29,7 @@ def read_controls_file(folder_path):
     data_dict = {}
     data_type = {"Int":int,
                  "Float":float,
+                 "Bool":bool,
                 "String":str,
                 "List":eval,
                 "Tuple":eval}
